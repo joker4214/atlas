@@ -51,6 +51,34 @@ export const paths = {
   org: () => process.env.ATLAS_ORG || 'atlas',
 };
 
+/**
+ * Run a cortextOS CLI command.
+ *
+ * cortextOS assumes ONE directory is both the framework (dist/, templates/)
+ * and the workspace (orgs/ with the agents). Its commands resolve that root
+ * from CTX_FRAMEWORK_ROOT or process.cwd(). So every cortextos command must
+ * run from inside the vendored framework dir with the env set — otherwise
+ * orgs/ ends up in one place, dist/daemon.js is looked up in another, and
+ * the daemon reports "No agents running".
+ */
+export function cortextos(args, opts = {}) {
+  const cli = join(paths.cortextos, 'dist', 'cli.js');
+  if (!existsSync(cli)) {
+    warn(`cortextOS CLI not built (${cli}). Run \`npm run bootstrap\` first.`);
+    return false;
+  }
+  return run(`node ${JSON.stringify(cli)} ${args}`, {
+    cwd: paths.cortextos,
+    soft: true,
+    env: {
+      ...process.env,
+      CTX_FRAMEWORK_ROOT: paths.cortextos,
+      CTX_PROJECT_ROOT: paths.cortextos,
+    },
+    ...opts,
+  });
+}
+
 /** The 6 agents that make up the fleet: [instanceName, cortextOS template]. */
 export const FLEET = [
   ['boss',       'orchestrator', 'orchestrator'],
