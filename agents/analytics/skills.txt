@@ -1,0 +1,14 @@
+# Analytics agent ("analyst") — market watch + weekly synthesis + scoring-model tuning.
+ecosystem-monitoring
+autoresearch
+weekly-review
+signal-scoring
+web-research
+activity-channel
+cron-management
+knowledge-base
+memory
+bus-reference
+tasks
+event-logging
+guardrails-reference

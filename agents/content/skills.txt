@@ -1,0 +1,13 @@
+# Content agent ("content") — authority content that pulls inbound leads. Value first.
+knowledge-base
+source-collection
+topic-briefing
+autoresearch
+comms
+activity-channel
+approvals
+guardrails-reference
+memory
+bus-reference
+tasks
+event-logging

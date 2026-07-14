@@ -1,0 +1,20 @@
+.env
+.env.local
+node_modules/
+.cortextos/
+cortextos/
+ecosystem.config.js
+*.log
+.DS_Store
+
+# Knowledge-base runtime writes (the fleet fills these at runtime; don't commit local runs).
+# The seed/ config, README, and the EXAMPLE lead ARE tracked so the structure ships.
+knowledge-base/index/
+knowledge-base/activity/
+knowledge-base/approvals/
+knowledge-base/health/
+knowledge-base/analytics/
+knowledge-base/content/
+knowledge-base/seed/imported/
+knowledge-base/leads/*
+!knowledge-base/leads/EXAMPLE-posh-pets.md

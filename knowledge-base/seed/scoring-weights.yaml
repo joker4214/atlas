@@ -1,0 +1,33 @@
+# Lead-scoring weights. Read by the `signal-scoring` skill on every scoring run.
+# The Analytics agent may tune these from real conversion data (`weekly-review`) — it is the
+# only agent permitted to edit this file, and every change is logged for operator visibility.
+#
+# score = 100 * (weights.fit * fit + weights.signal * signal + weights.act * act)
+#   where fit, signal, act are each 0..1, judged from the lead's brief.
+
+weights:
+  fit: 0.35      # how well they match the ICP
+  signal: 0.45   # how strong the "act now" signal is (weighted highest by default)
+  act: 0.20      # ability to actually buy (reachable decision-maker + budget signal)
+
+# Routing thresholds (see `delivery-routing`).
+qualified_threshold: 70    # score >= this AND qualification:ready  -> route: outreach
+borderline_band: [55, 70]  # score in this band                    -> route: human-review
+# below borderline_band[0]  -> route: nurture or drop
+
+# Sub-signal hints for the scorer (evidence to look for; not exhaustive).
+signals:
+  strong:                  # push `signal` toward 1.0
+    - active_ad_spend_with_weak_conversion
+    - public_request_for_help_matching_our_offer
+    - recent_launch_or_redesign
+    - hiring_for_growth_or_marketing
+  weak:                    # minor bumps
+    - fixable_visible_gap        # broken checkout, no analytics, off-brand
+    - seasonal_demand_window
+
+# Qualification mapping (see `signal-scoring`).
+qualification:
+  ready: pain_present AND can_act        # -> eligible for outreach
+  pain_qualified: pain_present AND NOT can_act   # -> nurture
+  cold: NOT pain_present

@@ -1,0 +1,13 @@
+# Outreach agent ("outreacher") — drafts first contact + follow-ups, approval-gated.
+relationship-review
+comms
+crm-management
+agent-browser
+approvals
+guardrails-reference
+human-tasks
+knowledge-base
+memory
+bus-reference
+tasks
+event-logging

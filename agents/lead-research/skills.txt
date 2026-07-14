@@ -1,0 +1,14 @@
+# Lead Research agent ("researcher") — sources, briefs, scores, and routes leads.
+source-collection
+brief-generation
+research-quality-review
+signal-scoring
+delivery-routing
+web-research
+agent-browser
+knowledge-base
+memory
+bus-reference
+tasks
+event-logging
+guardrails-reference

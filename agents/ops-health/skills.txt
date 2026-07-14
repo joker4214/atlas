@@ -1,0 +1,12 @@
+# Ops & Health agent ("ops") — keeps the fleet alive, scheduled, credentialed, and quiet at night.
+heartbeat
+system-diagnostics
+env-management
+nighttime-mode
+cron-management
+tool-registration
+knowledge-base
+memory
+bus-reference
+event-logging
+guardrails-reference

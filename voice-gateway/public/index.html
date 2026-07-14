@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Atlas — talk to your employee</title>
+<style>
+  :root {
+    --charcoal:#16181C; --charcoal-soft:#22252B; --accent:#2F5FFF; --accent-light:#5C82FF;
+    --white:#fff; --gray-100:#F5F5F6; --gray-400:#8A8F98; --gray-700:#3F434B; --good:#3FB984;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--charcoal); color:var(--white); height:100vh; display:flex; flex-direction:column; }
+  header { padding:20px 24px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--charcoal-soft); gap:12px; flex-wrap:wrap; }
+  .brand { font-weight:700; letter-spacing:.02em; }
+  .brand small { color:var(--gray-400); font-weight:400; margin-left:8px; }
+  .head-right { display:flex; align-items:center; gap:12px; }
+  .status { font-size:13px; color:var(--gray-400); }
+  .status b { color:var(--accent-light); }
+  .toggle { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--gray-400); cursor:pointer;
+    user-select:none; background:var(--charcoal-soft); border:1px solid #2b2f37; padding:7px 11px; border-radius:999px; }
+  .toggle.on { color:var(--good); border-color:color-mix(in srgb,var(--good) 45%,transparent); }
+  .toggle .sw { width:30px; height:17px; border-radius:999px; background:#3a3f49; position:relative; transition:background .2s; }
+  .toggle.on .sw { background:var(--good); }
+  .toggle .sw::after { content:""; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%;
+    background:#fff; transition:transform .2s; }
+  .toggle.on .sw::after { transform:translateX(13px); }
+  main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:24px; }
+  #log { width:100%; max-width:640px; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:8px 0; }
+  .bubble { max-width:80%; padding:12px 15px; border-radius:2px; line-height:1.45; font-size:15px; }
+  .me { align-self:flex-end; background:var(--accent); color:#fff; }
+  .atlas { align-self:flex-start; background:var(--charcoal-soft); color:var(--white); }
+  .hint { color:var(--gray-400); font-size:13px; text-align:center; max-width:520px; }
+  .mic-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  #mic { width:96px; height:96px; border-radius:50%; border:none; cursor:pointer; background:var(--accent);
+    color:#fff; font-size:34px; display:flex; align-items:center; justify-content:center;
+    transition:transform .1s, background .2s, box-shadow .2s; }
+  #mic:hover { background:var(--accent-light); }
+  #mic.armed { background:var(--charcoal-soft); box-shadow:0 0 0 2px color-mix(in srgb,var(--good) 40%,transparent) inset; }
+  #mic.listening { background:#e5484d; animation:pulse 1.4s infinite; }
+  #mic.speaking { background:var(--accent-light); }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(229,72,77,.5);} 70%{box-shadow:0 0 0 22px rgba(229,72,77,0);} 100%{box-shadow:0 0 0 0 rgba(229,72,77,0);} }
+  #label { font-size:14px; color:var(--gray-400); min-height:20px; text-align:center; }
+  .wake { color:var(--good); font-weight:600; }
+  .row { display:flex; gap:8px; width:100%; max-width:640px; }
+  #text { flex:1; padding:11px 13px; border-radius:2px; border:1px solid var(--charcoal-soft);
+    background:var(--charcoal-soft); color:#fff; font-size:15px; }
+  #send { padding:0 18px; border:none; border-radius:2px; background:var(--accent); color:#fff; cursor:pointer; font-weight:600; }
+  button:focus-visible, .toggle:focus-visible { outline:2px solid var(--accent-light); outline-offset:2px; }
+  footer { text-align:center; padding:10px; color:var(--gray-700); font-size:12px; }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important} }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">Atlas <small>your lead-gen employee</small></div>
+    <div class="head-right">
+      <div class="toggle" id="handsfree" role="switch" aria-checked="false" tabindex="0" title="Say the wake word to talk without tapping">
+        <span class="sw" aria-hidden="true"></span><span id="hfLabel">Hands-free</span>
+      </div>
+      <div class="status" id="status">connecting…</div>
+    </div>
+  </header>
+  <main>
+    <div id="log"></div>
+    <div class="mic-wrap">
+      <button id="mic" title="Tap to talk">🎙️</button>
+      <div id="label">Tap the mic and talk</div>
+    </div>
+    <div class="row">
+      <input id="text" placeholder="…or type to it (fallback)" autocomplete="off" />
+      <button id="send">Send</button>
+    </div>
+    <p class="hint" id="hint"></p>
+  </main>
+  <footer>Every action that leaves the system waits for your spoken yes. The team drafts. You ship.</footer>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const log = $('log'), micBtn = $('mic'), label = $('label'), statusEl = $('status'), hint = $('hint');
+  const hfBtn = $('handsfree'), hfLabel = $('hfLabel');
+  let ws, clientSpeech = true, speaking = false, wakeWord = 'Atlas';
+  let mode = 'idle';            // idle | ptt-listening | armed | awaiting-command
+  let handsfree = false, recog = null, restartTimer = null;
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  // HTML escape helper to prevent XSS.
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // ---- WebSocket to the gateway ----
+  function connect() {
+    ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onopen = () => statusEl.textContent = 'connected';
+    ws.onclose = () => { statusEl.textContent = 'disconnected — retrying…'; setTimeout(connect, 1500); };
+    ws.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.type === 'ready') {
+        clientSpeech = m.clientSpeech;
+        const mode = ['mock', 'live', 'live-timeout'].includes(m.mode) ? m.mode : 'unknown';
+        statusEl.innerHTML = `orchestrator: <b>${escapeHtml(mode)}</b>`;
+        hint.textContent = m.mode === 'mock'
+          ? 'Fleet not running — replies are a stand-in so you can feel the loop. Start it with `npm run fleet:start`.'
+          : 'Connected to your live fleet.';
+      }
+      if (m.type === 'transcript') add(m.text, 'me');
+      if (m.type === 'thinking') label.textContent = 'Atlas is thinking…';
+      if (m.type === 'say') { add(m.text, 'atlas'); speak(m.text); }
+      if (m.type === 'audio-reply') { add(m.text, 'atlas'); playAudio(m.dataBase64, m.mime); }
+      if (m.type === 'error') { add('⚠️ ' + m.message, 'atlas'); resetLabel(); }
+    };
+  }
+  fetch('/config').then(r => r.json()).then(c => { if (c.wakeWord) wakeWord = c.wakeWord; refreshHint(); }).catch(()=>{});
+
+  function add(text, who) {
+    const b = document.createElement('div');
+    b.className = 'bubble ' + (who === 'me' ? 'me' : 'atlas');
+    b.textContent = text; log.appendChild(b); log.scrollTop = log.scrollHeight;
+  }
+  function sendUtterance(text) {
+    if (!text || !text.trim()) return;
+    add(text, 'me'); ws?.send(JSON.stringify({ type: 'transcript', text }));
+  }
+  function resetLabel() {
+    if (handsfree) {
+      label.innerHTML = `Say <span class=”wake”>”${escapeHtml(wakeWord)}”</span> to talk`;
+    } else {
+      label.textContent = 'Tap the mic and talk';
+    }
+    micBtn.className = handsfree ? 'armed' : '';
+    mode = handsfree ? 'armed' : 'idle';
+  }
+  function refreshHint() { if (handsfree) hfBtn.title = `Say “${wakeWord}” then your request`; }
+
+  // ---- speech synthesis (reply) ----
+  function speak(text) {
+    if (!clientSpeech || !window.speechSynthesis) { resetLabel(); return; }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.05;
+    u.onstart = () => { speaking = true; micBtn.classList.add('speaking'); label.textContent = 'Atlas is speaking…'; };
+    u.onend = () => { speaking = false; micBtn.classList.remove('speaking'); resetLabel(); };
+    window.speechSynthesis.speak(u);
+  }
+  function playAudio(b64, mime) {
+    const blob = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: mime });
+    const a = new Audio(URL.createObjectURL(blob));
+    speaking = true; micBtn.classList.add('speaking'); label.textContent = 'Atlas is speaking…';
+    a.onended = () => { speaking = false; micBtn.classList.remove('speaking'); resetLabel(); };
+    a.play();
+  }
+  function bargeIn() { if (speaking) { window.speechSynthesis?.cancel(); speaking = false; micBtn.classList.remove('speaking'); } }
+
+  // ---- push-to-talk (single turn) ----
+  function pttListen() {
+    if (handsfree) return;                     // in hands-free the wake word drives it
+    if (!SR) { label.textContent = 'No speech recognition here — type instead.'; return; }
+    bargeIn();
+    recog = new SR(); recog.lang = 'en-US'; recog.interimResults = true; recog.continuous = false;
+    mode = 'ptt-listening'; micBtn.className = 'listening'; label.textContent = 'Listening…';
+    let finalText = '';
+    recog.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t; else interim += t;
+      }
+      label.textContent = (finalText + interim) || 'Listening…';
+    };
+    recog.onerror = () => { micBtn.className=''; resetLabel(); };
+    recog.onend = () => { micBtn.className=''; const s = finalText.trim(); s ? sendUtterance(s) : resetLabel(); };
+    recog.start();
+  }
+
+  // ---- hands-free wake-word loop (continuous) ----
+  function startHandsfree() {
+    if (!SR) { handsfree = false; setHF(false); label.textContent = 'No speech recognition here — use the mic or type.'; return; }
+    stopRecog();
+    recog = new SR(); recog.lang = 'en-US'; recog.interimResults = true; recog.continuous = true;
+    mode = 'armed';
+    recog.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (!e.results[i].isFinal) continue;
+        handleFinal(e.results[i][0].transcript.trim());
+      }
+    };
+    recog.onerror = (e) => { if (e.error === 'not-allowed') { label.textContent = 'Mic blocked — allow microphone access.'; setHF(false); } };
+    // continuous recognition drops periodically; auto-restart while armed
+    recog.onend = () => { if (handsfree) restartTimer = setTimeout(() => { try { recog.start(); } catch {} }, 300); };
+    try { recog.start(); } catch {}
+    resetLabel();
+  }
+  function handleFinal(text) {
+    const low = text.toLowerCase();
+    const w = wakeWord.toLowerCase();
+    if (mode === 'awaiting-command') {                 // wake word heard last turn; this is the command
+      mode = 'armed'; micBtn.className = 'armed';
+      return sendUtterance(text);
+    }
+    const idx = low.indexOf(w);
+    if (idx === -1) return;                             // no wake word — ignore ambient speech
+    bargeIn();
+    const after = text.slice(idx + wakeWord.length).replace(/^[\s,.:!?-]+/, '').trim();
+    micBtn.className = 'listening';
+    if (after) { setTimeout(() => { micBtn.className = 'armed'; }, 600); return sendUtterance(after); }
+    mode = 'awaiting-command'; label.innerHTML = `<span class="wake">Listening…</span> what do you need?`;
+  }
+  function stopRecog() { clearTimeout(restartTimer); if (recog) { try { recog.onend = null; recog.stop(); } catch {} recog = null; } }
+
+  // ---- hands-free toggle ----
+  function setHF(on) {
+    handsfree = on;
+    hfBtn.classList.toggle('on', on); hfBtn.setAttribute('aria-checked', String(on));
+    hfLabel.textContent = on ? 'Hands-free on' : 'Hands-free';
+    micBtn.title = on ? 'Hands-free is on — just say the wake word' : 'Tap to talk';
+    if (on) startHandsfree(); else { stopRecog(); resetLabel(); }
+  }
+  hfBtn.addEventListener('click', () => setHF(!handsfree));
+  hfBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setHF(!handsfree); } });
+
+  micBtn.addEventListener('click', () => {
+    if (handsfree) { bargeIn(); mode = 'awaiting-command'; micBtn.className = 'listening'; label.innerHTML = `<span class="wake">Listening…</span> what do you need?`; }
+    else pttListen();
+  });
+
+  // ---- text fallback ----
+  $('send').addEventListener('click', () => { const t = $('text').value.trim(); if (t) { sendUtterance(t); $('text').value=''; } });
+  $('text').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const t = e.target.value.trim(); if (t) { sendUtterance(t); e.target.value=''; } } });
+
+  connect(); resetLabel();
+})();
+</script>
+</body>
+</html>

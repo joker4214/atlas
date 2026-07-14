@@ -1,0 +1,17 @@
+# Orchestrator ("boss") — the assistant the operator talks to by voice.
+goal-management
+fleet-coordinator
+morning-review
+evening-review
+pending-items-summary
+approvals
+guardrails-reference
+human-tasks
+heartbeat
+system-diagnostics
+tasks
+event-logging
+knowledge-base
+memory
+bus-reference
+cron-management

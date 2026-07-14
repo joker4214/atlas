@@ -1,0 +1,26 @@
+{
+  "name": "atlas-employee",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A voice-driven, lead-generating AI employee — a cortextOS fleet with a voice gateway.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "seed:kb": "node scripts/seed-kb.mjs",
+    "import:kronos": "node scripts/import-kronos.mjs",
+    "fleet:start": "node scripts/fleet.mjs start",
+    "fleet:status": "node scripts/fleet.mjs status",
+    "fleet:stop": "node scripts/fleet.mjs stop",
+    "voice": "node voice-gateway/src/server.mjs",
+    "voice:dev": "node --watch voice-gateway/src/server.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {}
+}
