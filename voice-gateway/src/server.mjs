@@ -7,6 +7,7 @@
 // Speech API) so it runs with zero API keys. Set STT_PROVIDER / TTS_PROVIDER to
 // move recognition/synthesis server-side (Deepgram / ElevenLabs / Cartesia).
 import http from 'node:http';
+import { execFile } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +26,33 @@ const tts = getTTS();   // null => browser does TTS
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.ico': 'image/x-icon' };
 
+// ---- live fleet status (for the team strip in the browser app) ----
+// Asks the cortextOS daemon over its CLI and parses the status table. Cached
+// briefly so a busy UI can't hammer the daemon.
+const CORTEXTOS_DIR = join(HERE, '..', '..', 'cortextos');
+const CORTEXTOS_CLI = join(CORTEXTOS_DIR, 'dist', 'cli.js');
+let fleetCache = { at: 0, agents: [] };
+
+function fleetStatus() {
+  return new Promise((resolve) => {
+    if (Date.now() - fleetCache.at < 5000) return resolve(fleetCache.agents);
+    if (!existsSync(CORTEXTOS_CLI)) return resolve([]);
+    execFile('node', [CORTEXTOS_CLI, 'status'], {
+      cwd: CORTEXTOS_DIR,
+      timeout: 8000,
+      env: { ...process.env, CTX_FRAMEWORK_ROOT: CORTEXTOS_DIR, CTX_PROJECT_ROOT: CORTEXTOS_DIR },
+    }, (_err, stdout) => {
+      const agents = [];
+      for (const line of String(stdout || '').split('\n')) {
+        const m = line.match(/^\s*(\S+)\s+(running|online|starting|idle|crashed|stopped)\b\s*(\S*)\s*(\S*)/i);
+        if (m) agents.push({ name: m[1], status: m[2].toLowerCase(), pid: m[3] || '-', uptime: m[4] || '-' });
+      }
+      fleetCache = { at: Date.now(), agents };
+      resolve(agents);
+    });
+  });
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -36,6 +64,10 @@ const server = http.createServer((req, res) => {
       transport: config.transport,
       wakeWord: config.wakeWord,
     });
+  }
+
+  if (url.pathname === '/fleet') {
+    return fleetStatus().then((agents) => json(res, { agents }));
   }
 
   // Twilio phone transport (production add-on).
