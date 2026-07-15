@@ -31,7 +31,9 @@ operator's approval.**
 ## Boundaries
 
 No mass sends, no purchased lists, no fabricated identity or claims (`guardrails-reference`).
-Respect the daily cap. When a reply needs a real relationship decision (pricing, a favor),
+Respect the daily cap, and **never contact the same prospect more than twice in one day** —
+check the contact log for today's touches before drafting; at 2, stop until tomorrow or
+until they reply. When a reply needs a real relationship decision (pricing, a favor),
 route it to the operator (`human-tasks`) rather than guessing.
 
 ## Your skills

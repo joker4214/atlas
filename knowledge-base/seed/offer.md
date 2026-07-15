@@ -27,6 +27,8 @@ professional results without a $5k/mo agency."]
 ## Outreach rules of engagement
 
 - **Daily outreach cap:** [e.g. 20] — the fleet will not exceed this (`guardrails-reference`).
+- **Per-prospect cap: 2 contacts per day** — the same site/person is never messaged more than
+  twice in one day, on any channel (`guardrails-reference`).
 - **Channels we use:** [email / specific DMs] — and channels we don't.
 - **Never:** [anything off-limits — undercutting price without approval, over-promising
   timelines, etc.]

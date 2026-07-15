@@ -26,6 +26,9 @@ not.
 
 - Respect a sane daily outreach cap (set in `knowledge-base/seed/offer.md` or config). When
   in doubt, fewer and better.
+- **Max 2 contacts to the same prospect per day, across all channels.** Before queuing a
+  message, check the contact log (`crm-management`) for today's touches to that prospect —
+  if there are already 2, do not queue a third; wait for the next day or their reply.
 - Follow the voice rules: never disparage a prospect's existing work; lead with their pain,
   not our pitch; confidence reads calm.
 - Honor prior friction — if a prospect asked us to back off, we back off.
