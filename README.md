@@ -39,7 +39,8 @@ on top.
 
 - An **always-on host** — a Mac mini, a small VPS, or a home box. Atlas is a 24/7 employee;
   it needs a machine that stays on. (This does not run on ephemeral cloud sandboxes.)
-- **Node.js 20+**, a **Claude Code login**, and **PM2** (`npm i -g pm2`).
+- **Node.js 20+** and a **Claude Code login**. (The `claude` and `pm2` CLIs are
+  installed automatically by `npm run bootstrap` if missing.)
 - API keys for voice: an **STT** provider (Deepgram, or local Whisper) and a **TTS**
   provider (ElevenLabs or Cartesia). Optional **Twilio** for a phone number.
 - Everything sensitive lives in `.env` and is never committed. Copy `.env.example` to
@@ -50,16 +51,16 @@ on top.
 ## Zero to running
 
 ```bash
-# 1. Install prerequisites (Claude Code + PM2)
-npm install -g @anthropic-ai/claude-code pm2
-claude login
-
-# 2. Bootstrap Atlas — clones cortextOS, creates the org, adds the 6 agents,
-#    installs the authored skills, and seeds the knowledge base.
+# 1. Bootstrap Atlas — installs the Claude Code + PM2 CLIs if missing, clones
+#    cortextOS, creates the org, adds the 6 agents, installs the authored
+#    skills, and seeds the knowledge base.
 cd atlas
 cp .env.example .env      # then fill in your keys
 npm install
 npm run bootstrap
+
+# 2. Log in to Claude Code (the agents run on your login)
+claude login
 
 # 3. Start the fleet (24/7, survives reboot)
 npm run fleet:start

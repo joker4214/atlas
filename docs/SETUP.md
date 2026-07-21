@@ -7,9 +7,13 @@ home box. It won't run on an ephemeral cloud sandbox. Plan for ~30 minutes the f
 
 ```bash
 node -v            # need 20+
-npm install -g @anthropic-ai/claude-code pm2
-claude login       # cortextOS agents run on your Claude Code login
 ```
+
+You only need Node 20+ and git up front — `npm run bootstrap` (step 2) installs the
+`claude` (Claude Code) and `pm2` CLIs globally if they're missing. If your npm prefix
+needs elevated permissions, bootstrap will warn and you can install them yourself:
+`npm install -g @anthropic-ai/claude-code pm2`. Either way, run `claude login` before
+starting the fleet — cortextOS agents run on your Claude Code login.
 
 ## 1. Configure
 
