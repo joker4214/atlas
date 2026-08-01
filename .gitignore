@@ -13,7 +13,8 @@ knowledge-base/index/
 knowledge-base/activity/
 knowledge-base/approvals/
 knowledge-base/health/
-knowledge-base/analytics/
+knowledge-base/analytics/*
+!knowledge-base/analytics/2026-08-01-market-alternatives.md
 knowledge-base/content/
 knowledge-base/seed/imported/
 knowledge-base/leads/*

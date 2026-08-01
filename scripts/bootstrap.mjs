@@ -10,14 +10,27 @@ import { deploy } from './deploy.mjs';
 
 const CORTEXTOS_REPO = 'https://github.com/grandamenium/cortextos.git';
 
+// Install a required CLI globally if it's missing. Falls back to a warning when
+// the global install can't run here (e.g. npm prefix needs sudo).
+function installCli(bin, pkg, why) {
+  if (has(bin)) { log(`${bin} ✓`); return true; }
+  log(`\`${bin}\` not on PATH — installing ${pkg}`);
+  run(`npm install -g ${pkg}`, { soft: true });
+  if (has(bin)) { log(`${bin} installed ✓`); return true; }
+  warn(`\`${bin}\` still not on PATH — install manually: npm i -g ${pkg} (${why})`);
+  return false;
+}
+
 function preflight() {
   step('Preflight');
   if (!has('node')) die('Node.js 20+ is required.');
   const major = Number(process.versions.node.split('.')[0]);
   if (major < 20) die(`Node ${process.versions.node} found; Atlas needs 20+.`);
   if (!has('git')) die('git is required.');
-  if (!has('claude')) warn('`claude` (Claude Code) not on PATH — install with: npm i -g @anthropic-ai/claude-code && claude login');
-  if (!has('pm2')) warn('`pm2` not on PATH — install with: npm i -g pm2 (needed for 24/7 running)');
+  const hadClaude = has('claude');
+  installCli('claude', '@anthropic-ai/claude-code', 'the agents run on Claude Code');
+  if (!hadClaude && has('claude')) warn('run `claude login` before starting the fleet — agents run on your Claude Code login');
+  installCli('pm2', 'pm2', 'needed for 24/7 running');
   log(`node ${process.versions.node} ✓`);
 }
 
