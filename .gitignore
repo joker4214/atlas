@@ -4,6 +4,7 @@ node_modules/
 .cortextos/
 cortextos/
 ecosystem.config.js
+ecosystem.config.cjs
 *.log
 .DS_Store
 

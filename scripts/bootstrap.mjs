@@ -4,8 +4,9 @@
 //
 // Safe to re-run: every step checks for existing state before acting.
 import 'dotenv/config';
-import { existsSync } from 'node:fs';
-import { run, has, step, log, warn, die, paths, FLEET } from './lib/util.mjs';
+import { existsSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { run, has, step, log, warn, die, paths, FLEET, ROOT, cortextos } from './lib/util.mjs';
 import { deploy } from './deploy.mjs';
 
 const CORTEXTOS_REPO = 'https://github.com/grandamenium/cortextos.git';
@@ -16,8 +17,14 @@ function preflight() {
   const major = Number(process.versions.node.split('.')[0]);
   if (major < 20) die(`Node ${process.versions.node} found; Atlas needs 20+.`);
   if (!has('git')) die('git is required.');
-  if (!has('claude')) warn('`claude` (Claude Code) not on PATH — install with: npm i -g @anthropic-ai/claude-code && claude login');
-  if (!has('pm2')) warn('`pm2` not on PATH — install with: npm i -g pm2 (needed for 24/7 running)');
+  if (!has('claude')) {
+    // Not just a nice-to-have: every agent IS a Claude Code session. Without
+    // the CLI the daemon spawns agents that die instantly ("No agents running").
+    warn('`claude` (Claude Code) is NOT installed — agents cannot run without it.');
+    warn('Install it first:  sudo npm install -g @anthropic-ai/claude-code');
+    warn('Then run `claude` once in a terminal to log in, and re-run this bootstrap.');
+  }
+  if (!has('pm2')) warn('`pm2` not on PATH — install with: sudo npm i -g pm2 (needed for 24/7 running)');
   log(`node ${process.versions.node} ✓`);
 }
 
@@ -29,17 +36,12 @@ function getCortextos() {
   run('npm run build', { cwd: paths.cortextos, soft: true });
 }
 
-// Prefer a globally-linked `cortextos` CLI; otherwise call the local build.
-function cortextos(args) {
-  const local = `node ${paths.cortextos}/bin/cortextos.mjs`;
-  const bin = has('cortextos') ? 'cortextos' : local;
-  return run(`${bin} ${args}`, { soft: true });
-}
-
 function createOrgAndFleet() {
   const org = paths.org();
   step(`Org "${org}" + fleet`);
-  process.env.CORTEXTOS_HOME = paths.home();
+  // All cortextos commands run inside cortextos/ (see util.mjs cortextos()),
+  // so the org lands at cortextos/orgs/<org> — the one place the daemon,
+  // ecosystem generator, and status command all agree on.
   cortextos('install');
   cortextos(`init ${org}`);
   for (const [name, template] of FLEET) {
@@ -61,7 +63,11 @@ async function main() {
   run('node scripts/seed-kb.mjs', { soft: true });
 
   step('Generate the PM2 ecosystem config');
-  cortextos('ecosystem');
+  // Write straight into atlas/ as .cjs: the generated file uses module.exports,
+  // and package.json's "type": "module" would make PM2 choke on a .js name.
+  cortextos(`ecosystem --org ${paths.org()} --output ${JSON.stringify(join(ROOT, 'ecosystem.config.cjs'))}`);
+  // Clean up any stray copy from older bootstrap runs.
+  try { rmSync(join(ROOT, 'ecosystem.config.js')); } catch {}
 
   console.log(`
 \x1b[1m╰─ Done ────────────────────────────────────────────╯\x1b[0m

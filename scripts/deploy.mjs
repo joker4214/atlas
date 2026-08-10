@@ -32,8 +32,11 @@ function findDir(root, target, depth = 5) {
 function agentHome(instance) {
   const home = paths.home();
   const org = paths.org();
-  // Try the conventional layouts first, then fall back to a search.
+  // cortextOS keeps agents at <framework root>/orgs/<org>/agents/<name>
+  // (bootstrap runs every cortextos command from inside cortextos/, so that's
+  // where `init`/`add-agent` put them). Older layouts are kept as fallbacks.
   const candidates = [
+    join(paths.cortextos, 'orgs', org, 'agents', instance),
     join(home, 'orgs', org, 'agents', instance),
     join(home, org, 'agents', instance),
     join(home, 'agents', instance),

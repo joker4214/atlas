@@ -64,7 +64,7 @@ atlas/
   .env.example            # documented config (STT/TTS/wake word/Twilio/model)
   .gitignore              # excludes .env, .cortextos, cortextos/, runtime writes
   README.md               # overview, what's in the box, requirements, zero-to-running
-  ecosystem.config.js     # (generated) PM2 config for 24/7 running + auto-restart
+  ecosystem.config.cjs    # (generated) PM2 config for 24/7 running + auto-restart
   docs/
     SETUP.md              # long-form walkthrough (prerequisites, config, bootstrap, test)
     ARCHITECTURE.md       # how the pieces fit (layers, data model, goal flow)
