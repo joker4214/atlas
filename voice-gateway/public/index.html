@@ -117,7 +117,10 @@
       if (m.type === 'error') { add('⚠️ ' + m.message, 'atlas'); resetLabel(); }
     };
   }
-  fetch('/config').then(r => r.json()).then(c => { if (c.wakeWord) wakeWord = c.wakeWord; refreshHint(); }).catch(()=>{});
+  fetch('/config').then(r => r.json()).then(c => {
+    if (c.wakeWord) { wakeWord = c.wakeWord; refreshHint(); }
+    else { hfBtn.style.display = 'none'; }   // WAKE_WORD='' — hands-free disabled server-side
+  }).catch(()=>{});
 
   function add(text, who) {
     const b = document.createElement('div');
